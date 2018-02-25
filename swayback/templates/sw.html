@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>Just a second…</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<style>
+		.hidden {
+			display: none;
+		}
+		</style>
+    </head>
+    <body>
+	<div class="hidden" id="unsupported">
+		<p>Service workers are not supported by your browser.</p>
+	</div>
+	<div id="waiting">
+		<p>Just a second…</p>
+	</div>
+	<script>
+	if ('serviceWorker' in navigator) {
+		/* service workers must be hosted in the same origin (i.e. subdomain) */
+		navigator.serviceWorker.register('/static/sw.js', {scope: '/'})
+		.then(function(reg) {
+			/* load actual content using the service worker */
+			window.location.reload ();
+		}).catch(function(error) {
+			console.log ('sw error', error);
+			document.getElementById ('unsupported').classList.remove ('hidden');
+			document.getElementById ('waiting').classList.add ('hidden');
+		});
+	} else {
+		console.log ('not supported');
+		document.getElementById ('unsupported').classList.remove ('hidden');
+		document.getElementById ('waiting').classList.add ('hidden');
+	}
+	</script>
+    </body>
+</html>
