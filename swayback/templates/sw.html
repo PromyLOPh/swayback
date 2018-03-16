@@ -24,8 +24,17 @@
 		/* service workers must be hosted in the same origin (i.e. subdomain) */
 		navigator.serviceWorker.register('/static/sw.js', {scope: '/'})
 		.then(function(reg) {
-			/* load actual content using the service worker */
-			window.location.reload ();
+			/* load actual content using the service worker when done installing */
+			if (reg.installing) {
+				reg.installing.addEventListener ('statechange', function (e) {
+					if (e.target.state !== 'installing') {
+						console.log ('reloading');
+						window.location.reload ();
+						return false;
+					}
+					return true;
+				});
+			}
 		}).catch(function(error) {
 			console.log ('sw error', error);
 			document.getElementById ('unsupported').classList.remove ('hidden');

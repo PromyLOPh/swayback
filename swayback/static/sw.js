@@ -3,13 +3,18 @@ self.addEventListener('install', function(event) {
 	self.skipWaiting();
 });
 /* load stuff through service worker immediately? XXX: only debugging? */
-self.addEventListener('activate', event => {
-  event.waitUntil(clients.claim());
+self.addEventListener('activate', async function() {
+    if (self.registration.navigationPreload) {
+      // Enable navigation preloads!
+      await self.registration.navigationPreload.enable();
+    } /*event => {
+  event.waitUntil(clients.claim());*/
 });
 
 self.addEventListener('fetch', function(event) {
-	console.log ('fetch event', event.request.url, event);
-	let url = new URL (event.request.url);
+	let origreq = event.request;
+	console.log ('fetch event', origreq.url, event);
+	let url = new URL (origreq.url);
 	url.protocol = 'https:';
 	url.port = 443;
 	url.hash = '';
@@ -17,10 +22,23 @@ self.addEventListener('fetch', function(event) {
 		url.hostname = url.hostname.slice (0, url.hostname.length-'.swayback.localhost'.length);
 	}
 	console.log ('orig url', url);
-	let body = new FormData ();
-	body.append ('url', url);
-	body.append ('method', event.request.method);
-	let req = new Request ('http://swayback.localhost:5000/raw', {method: 'POST', body: body});
+	/* should contain everything we cannot use in the actual request (i.e. url and method) */
+	let body = {
+		'url': url.href,
+		'method': origreq.method,
+		};
+	let headers = {
+		'Content-Type': 'application/json',
+		};
+	/* add a few well-known request headers */
+	let origheaders = origreq.headers;
+	if (origheaders.has ('accept')) {
+		headers['Accept'] = origreq.headers.get ('accept');
+	}
+	console.log ('sending', body, headers);
+	let req = new Request ('http://swayback.localhost:5000/raw',
+			{method: 'POST', body: JSON.stringify (body), headers: headers,
+			mode: 'cors'});
 
 	event.respondWith (
 		fetch(req)
