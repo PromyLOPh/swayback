@@ -1,3 +1,7 @@
+/* script config, dynamically generated */
+const baseHost = "{{ baseHost }}";
+const baseDomain = baseHost.split (':', 1)[0];
+
 self.addEventListener('install', function(event) {
 	console.log ('installed service worker', event);
 	self.skipWaiting();
@@ -18,8 +22,8 @@ self.addEventListener('fetch', function(event) {
 	url.protocol = 'https:';
 	url.port = 443;
 	url.hash = '';
-	if (url.hostname.endsWith ('.swayback.localhost')) {
-		url.hostname = url.hostname.slice (0, url.hostname.length-'.swayback.localhost'.length);
+	if (url.hostname.endsWith ('.' + baseDomain)) {
+		url.hostname = url.hostname.slice (0, url.hostname.length-('.'+baseDomain).length);
 	}
 	console.log ('orig url', url);
 	/* should contain everything we cannot use in the actual request (i.e. url and method) */
@@ -36,7 +40,7 @@ self.addEventListener('fetch', function(event) {
 		headers['Accept'] = origreq.headers.get ('accept');
 	}
 	console.log ('sending', body, headers);
-	let req = new Request ('http://swayback.localhost:5000/raw',
+	let req = new Request ('http://' + baseHost + '/raw',
 			{method: 'POST', body: JSON.stringify (body), headers: headers,
 			mode: 'cors'});
 

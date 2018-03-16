@@ -7,8 +7,13 @@ from warcio.archiveiterator import ArchiveIterator
 from warcio.recordloader import ArcWarcRecordLoader
 from warcio.bufferedreaders import DecompressingBufferedReader
 
+class DefaultSettings:
+    BASE_HOST = 'swayback.localhost:5000'
+
 app = Flask(__name__)
 app.url_map.host_matching = True
+app.config.from_object('swayback.DefaultSettings')
+app.config.from_envvar('SWAYBACK_SETTINGS')
 
 htmlindex = []
 urlmap = {}
@@ -25,15 +30,15 @@ for filename in os.listdir ('.'):
                     urlmap[u] = (filename, ai.get_record_offset (), ai.get_record_length ())
                 httpHeaders = record.http_headers
                 if httpHeaders.get_header ('content-type', '').startswith ('text/html'):
-                    rewrittenUrl = urlunparse (('http', u.hostname + '.swayback.localhost:5000', u[2], u[3], u[4], u[5]))
+                    rewrittenUrl = urlunparse (('http', u.hostname + '.' + app.config['BASE_HOST'], u[2], u[3], u[4], u[5]))
                     htmlindex.append ((urlunparse (u), rewrittenUrl, record.rec_headers.get_header ('warc-date')))
 
-@app.route('/', host='swayback.localhost:5000')
+@app.route('/', host=app.config['BASE_HOST'])
 def index ():
     """ A simple index of all HTML pages inside the WARCs """
     return render_template ('index.html', index=htmlindex)
 
-@app.route('/raw', host='swayback.localhost:5000', methods=['OPTIONS'])
+@app.route('/raw', host=app.config['BASE_HOST'], methods=['OPTIONS'])
 def rawPreflight ():
     """ CORS preflight request, allow user-defined fetch() headers """
     resp = make_response ('', 200)
@@ -54,7 +59,7 @@ def lookupRecord (url):
     except KeyError:
         return None
 
-@app.route('/raw', host='swayback.localhost:5000', methods=['POST'])
+@app.route('/raw', host=app.config['BASE_HOST'], methods=['POST'])
 def raw ():
     """ Retrieve the original response for a given request """
     data = request.get_json ()
@@ -74,10 +79,11 @@ def raw ():
 @app.route('/static/sw.js', host='<host>')
 def sw (host=None):
     """ Service worker script needs additional headers """
-    return send_file ('static/sw.js'), {'Service-Worker-Allowed': '/'}
+    headers = {'Service-Worker-Allowed': '/', 'Content-Type': 'application/javascript'}
+    return render_template ('sw.js', baseHost=app.config['BASE_HOST']), headers
 
 # each subdomain will need its own service worker registration
-@app.route('/<path:path>', host='<domain>.swayback.localhost:5000', methods=['GET', 'POST'])
+@app.route('/<path:path>', host='<domain>.' + app.config['BASE_HOST'], methods=['GET', 'POST'])
 def register (path=None, domain=None):
     """ Register a service worker for this origin """
     return render_template ('sw.html')

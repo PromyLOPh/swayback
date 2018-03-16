@@ -34,14 +34,14 @@ any request a web app makes. This is exactly what is needed to properly replay
 archived web apps.
 
 swayback provides an HTTP server, responing to queries for the wildcard
-domain ``*.swayback.localhost``. The page served first installs a service
-worker and then reloads the page. Now the service worker is in control of
-network requests and rewrites a request like (for instance)
+domain, which is ``*.swayback.localhost`` by default. The page served first
+installs a service worker and then reloads the page. Now the service worker is
+in control of network requests and rewrites a request like (for instance)
 ``www.instagram.com.swayback.localhost:5000/bluebellwooi/`` to
 ``swayback.localhost:5000/raw`` with the real URL in the POST request body.
-swayback’s server looks up that URL in the WARC files provided and replies
-with the original server’s response, which is then returned by the service
-worker to the browser without modification.
+swayback’s server looks up that URL in the WARC files provided and replies with
+the original server’s response, which is then returned by the service worker to
+the browser without modification.
 
 Usage
 -----
@@ -52,8 +52,8 @@ the following python packages:
 - flask
 - warcio
 
-swayback uses the hardcoded domain ``swayback.localhost``, which means you need
-to set up your DNS resolver accordingly. An example for unbound looks like
+swayback uses the domain ``swayback.localhost`` by default, which means you
+need to set up your DNS resolver accordingly. An example for unbound looks like
 this:
 
 .. code:: unbound
@@ -75,8 +75,9 @@ HTML pages found in those WARC files.
 Caveats
 -------
 
-- Hardcoded replay domain
 - URL lookup is broken, only HTTPS sites work correctly
+- Absolute hyperlink targets to different domains are not intercepted (service
+  worker limitation)
 
 Related projects
 ----------------
